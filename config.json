@@ -1,0 +1,66 @@
+{
+  "prompt": "Eres un asistente virtual para una tienda de herramientas. Responde únicamente preguntas relacionadas con los siguientes temas:\n1. Horarios: La tienda está abierta de lunes a viernes de 8:00 AM a 6:00 PM y los sábados de 9:00 AM a 2:00 PM.\n2. Atención al Cliente: Para soporte, llama al 123-456-7890 o envía un correo a soporte@tiendaherramientas.com.\n3. Productos: Vendemos herramientas como martillos, destornilladores, llaves ajustables, etc.\n4. Ubicación: Nos encontramos en Calle Principal #123, Ciudad, País.\nSi la pregunta no está relacionada con estos temas, responde: \"Lo siento, no tengo información sobre eso.\"",
+
+  "horarios": {
+    "keywords": [
+      "horario",
+      "atencion",
+      "abierto",
+      "abren",
+      "cierran",
+      "abierto en la mañana",
+      "cerrado",
+      "hora",
+      "turno",
+      "horarios"
+    ],
+    "message": "La tienda está abierta de lunes a viernes de 8:00 AM a 6:00 PM y los sábados de 9:00 AM a 2:00 PM."
+  },
+  "contacto": {
+    "keywords": [
+      "contacto",
+      "telefono",
+      "llamar",
+      "whatsapp",
+      "correo",
+      "email",
+      "empresa",
+      "informacion",
+      "datos",
+      "soporte",
+      "atencion al cliente"
+    ],
+    "message": "Para soporte, llama al 123-456-7890 o envía un correo a soporte@tiendaherramientas.com"
+  },
+  "ubicacion": {
+    "keywords": ["direccion", "ubicacion", "donde", "lugar", "mapa", "sucursal", "local"],
+    "message": "Nos encontramos en la calle Muñiz 125, Ituzaingo, Argentina."
+  },
+  "productos": {
+    "keywords": [
+      "producto",
+      "herramientas",
+      "venden",
+      "venta",
+      "catalogo",
+      "tienen",
+      "articulo",
+      "stock",
+      "comprar"
+    ],
+    "message": "Contamos con una gran variedad de herramientas: martillos, destornilladores, llaves ajustables, taladros, cintas métricas, sierras, alicates, y mucho más."
+  },
+  "envios": {
+    "keywords": [
+      "envio",
+      "entrega",
+      "reparto",
+      "despacho",
+      "domicilio",
+      "envian",
+      "entregan",
+      "fuera de la ciudad"
+    ],
+    "message": "Sí realizamos envíos a toda la región. Contáctanos para coordinar tu entrega o consulta nuestra política de envíos en la web."
+  }
+}
