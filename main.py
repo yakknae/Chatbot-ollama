@@ -1,48 +1,71 @@
+from fastapi import FastAPI
+from pydantic import BaseModel
 from langchain_ollama import OllamaLLM
-import json
+from langchain_core.prompts import ChatPromptTemplate
+from informacion_negocio import info
 
-# Cargar configuración desde el archivo JSON
-with open("config.json", "r", encoding="utf-8") as f:
-    config = json.load(f)
+# Crear modelo
+model = OllamaLLM(model="llama3")
 
-# Configuración inicial del modelo Ollama
-model = OllamaLLM(model="llama3.2")
+# Crear prompt y cadena
+template = """
+Información del negocio:
+{info}
 
-# Cargar el contexto desde el JSON
-context = config["prompt"]
+Pregunta:
+{question}
 
-# Función para obtener la respuesta del modelo
-def get_response(user_input):
-    user_input_lower = user_input.lower()
+Respuesta:
+"""
+prompt = ChatPromptTemplate.from_template(template)
+chain = prompt | model
 
-    # Detectar si es una pregunta sobre una seccion
-    for category_key in config:
-        if category_key == "prompt":
-            continue
+# Contexto global
+context = ""
 
-        category = config[category_key]
-        for keyword in category["keywords"]:
-            if keyword in user_input_lower:
-                return category["message"]
-        
-    prompt = f"{context}\nPregunta del usuario: {user_input}\nRespuesta:"
-    response = model.invoke(prompt)
-    return response
+# App de FastAPI
+app = FastAPI()
 
-# Función principal para interactuar con el usuario
-def main():
-    print("¡Bienvenido al Asistente Virtual de la Tienda de Herramientas!")
-    print("Escribe 'salir' para terminar la conversación.\n")
-    
-    while True:
-        user_input = input("Tú: ")
-        if user_input.lower() in ["salir", "exit", "quit"]:
-            print("Bot: ¡Gracias por visitarnos! Hasta luego.")
-            break
-        
-        response = get_response(user_input)
-        print(f"Bot: {response}\n")
+# Modelo de datos para recibir las preguntas
+class Question(BaseModel):
+    question: str
 
-# Ejecutar la aplicación
-if __name__ == "__main__":
-    main()
+# Función para filtrar preguntas fuera de tema
+def es_pregunta_relevante(pregunta):
+    pregunta = pregunta.lower()
+
+    temas_permitidos = [
+        "laptop", "teléfono", "móvil", "iphone", "samsung", "xiaomi", "motorola", 
+        "accesorio", "cargador", "auricular", "funda",
+        "asesoramiento", "soporte técnico", "envío", "envíos", "envío gratuito",
+        "ubicación", "dirección", "calle ficticia", "ciudad techno",
+        "horario", "horarios", "atención", "hora de atención",
+        "teléfono", "correo", "email", "contacto", "página web", "red social", "facebook", "instagram",
+        "oferta", "descuento", "promoción",
+        "devolución", "reembolso", "cambio de producto",
+        "política de devoluciones", "calidad", "satisfacción",
+    ]
+
+    return any(tema in pregunta for tema in temas_permitidos)
+
+
+# Endpoint para hacer preguntas
+@app.post("/chat/")
+async def chat_endpoint(q: Question):
+    global context
+
+    question = q.question
+
+    if not es_pregunta_relevante(question):
+        return {"bot": "Solo puedo responder preguntas relacionadas con la empresa y sus productos."}
+
+    result = chain.invoke({
+        "info": info,
+        "context": context,
+        "question": question
+    })
+
+    answer = result.content if hasattr(result, "content") else result
+    context += f"\n\nPregunta: {question}\nRespuesta: {answer}"
+
+    return {"bot": answer}
