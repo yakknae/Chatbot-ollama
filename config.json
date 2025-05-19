@@ -1,66 +1,33 @@
 {
-  "prompt": "Eres un asistente virtual para una tienda de herramientas. Responde únicamente preguntas relacionadas con los siguientes temas:\n1. Horarios: La tienda está abierta de lunes a viernes de 8:00 AM a 6:00 PM y los sábados de 9:00 AM a 2:00 PM.\n2. Atención al Cliente: Para soporte, llama al 123-456-7890 o envía un correo a soporte@tiendaherramientas.com.\n3. Productos: Vendemos herramientas como martillos, destornilladores, llaves ajustables, etc.\n4. Ubicación: Nos encontramos en Calle Principal #123, Ciudad, País.\nSi la pregunta no está relacionada con estos temas, responde: \"Lo siento, no tengo información sobre eso.\"",
-
-  "horarios": {
-    "keywords": [
-      "horario",
-      "atencion",
-      "abierto",
-      "abren",
-      "cierran",
-      "abierto en la mañana",
-      "cerrado",
-      "hora",
-      "turno",
-      "horarios"
-    ],
-    "message": "La tienda está abierta de lunes a viernes de 8:00 AM a 6:00 PM y los sábados de 9:00 AM a 2:00 PM."
-  },
-  "contacto": {
-    "keywords": [
-      "contacto",
-      "telefono",
-      "llamar",
-      "whatsapp",
-      "correo",
-      "email",
-      "empresa",
-      "informacion",
-      "datos",
-      "soporte",
-      "atencion al cliente"
-    ],
-    "message": "Para soporte, llama al 123-456-7890 o envía un correo a soporte@tiendaherramientas.com"
-  },
-  "ubicacion": {
-    "keywords": ["direccion", "ubicacion", "donde", "lugar", "mapa", "sucursal", "local"],
-    "message": "Nos encontramos en la calle Muñiz 125, Ituzaingo, Argentina."
-  },
-  "productos": {
-    "keywords": [
-      "producto",
-      "herramientas",
-      "venden",
-      "venta",
-      "catalogo",
-      "tienen",
-      "articulo",
-      "stock",
-      "comprar"
-    ],
-    "message": "Contamos con una gran variedad de herramientas: martillos, destornilladores, llaves ajustables, taladros, cintas métricas, sierras, alicates, y mucho más."
+  "prompt": {
+    "message": "Eres un asistente de atención al cliente especializado en productos de supermercado. Debes proporcionar información precisa sobre productos, precios y stock basándote exclusivamente en los datos disponibles, manteniendo un tono amable pero profesional."
   },
   "envios": {
-    "keywords": [
-      "envio",
-      "entrega",
-      "reparto",
-      "despacho",
-      "domicilio",
-      "envian",
-      "entregan",
-      "fuera de la ciudad"
-    ],
-    "message": "Sí realizamos envíos a toda la región. Contáctanos para coordinar tu entrega o consulta nuestra política de envíos en la web."
+    "keywords": ["envío", "envios", "domicilio"],
+    "message": "Sí, realizamos envíos en zonas cercanas, consulte cobertura."
+  },
+  "tarjetas": {
+    "keywords": ["tarjeta", "crédito", "credito", "débito", "debito"],
+    "message": "Sí, aceptamos todas las tarjetas principales."
+  },
+  "promociones": {
+    "keywords": ["promoción", "promocion", "oferta", "descuento"],
+    "message": "Sí, publicamos las promociones todos los lunes."
+  },
+  "factura": {
+    "keywords": ["factura", "factura A", "CUIT"],
+    "message": "Solicítela en caja antes de pagar, con su CUIT."
+  },
+  "horario": {
+    "keywords": ["horario", "atención", "atencion"],
+    "message": "Lunes a Sábado de 8:00 a 21:00, Domingo de 9:00 a 13:00."
+  },
+  "productos": {
+    "keywords": ["producto", "productos", "artículo", "articulos"],
+    "message": "Por favor, especifique el nombre del producto que desea buscar."
+  },
+  "error": {
+    "keywords": ["error", "equivocado", "problema"],
+    "message": "Lo siento, no tengo esa información. ¿Te gustaría buscar algún producto específico?"
   }
 }
