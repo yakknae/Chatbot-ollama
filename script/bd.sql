@@ -1,22 +1,5 @@
--- --------------------------------------------------------
--- Host:                         127.0.0.1
--- Versión del servidor:         11.7.2-MariaDB - mariadb.org binary distribution
--- SO del servidor:              Win64
--- HeidiSQL Versión:             12.10.0.7000
--- --------------------------------------------------------
 
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET NAMES utf8 */;
-/*!50503 SET NAMES utf8mb4 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-
-
--- Volcando estructura de base de datos para pp3_proyecto
-CREATE DATABASE IF NOT EXISTS `pp3_proyecto` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci */;
+CREATE DATABASE IF NOT EXISTS `pp3_proyecto` ;
 USE `pp3_proyecto`;
 
 -- Volcando estructura para tabla pp3_proyecto.categorias
@@ -26,7 +9,7 @@ CREATE TABLE IF NOT EXISTS `categorias` (
   `descripcion` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `nombre` (`nombre`)
-) ENGINE=InnoDB AUTO_INCREMENT=462 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=462 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 -- Volcando datos para la tabla pp3_proyecto.categorias: ~461 rows (aproximadamente)
 INSERT IGNORE INTO `categorias` (`id`, `nombre`, `descripcion`) VALUES
@@ -503,9 +486,33 @@ CREATE TABLE IF NOT EXISTS `clientes` (
   `fecha_registro` timestamp NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
--- Volcando datos para la tabla pp3_proyecto.clientes: ~0 rows (aproximadamente)
+
+-- Volcando estructura para tabla pp3_proyecto.proveedores
+CREATE TABLE IF NOT EXISTS `proveedores` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(255) NOT NULL,
+  `contacto` varchar(255) DEFAULT NULL,
+  `telefono` varchar(50) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `direccion` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+
+-- Volcando datos para la tabla pp3_proyecto.proveedores: ~0 rows (aproximadamente)
+
+-- Volcando estructura para tabla pp3_proyecto.ventas
+CREATE TABLE IF NOT EXISTS `ventas` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `cliente_id` int(11) DEFAULT NULL,
+  `fecha_venta` timestamp NULL DEFAULT current_timestamp(),
+  `total_venta` decimal(10,2) NOT NULL,
+  `metodo_pago` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_ventas_clientes` (`cliente_id`),
+  CONSTRAINT `fk_ventas_clientes` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 -- Volcando estructura para tabla pp3_proyecto.compras
 CREATE TABLE IF NOT EXISTS `compras` (
@@ -516,96 +523,10 @@ CREATE TABLE IF NOT EXISTS `compras` (
   PRIMARY KEY (`id`),
   KEY `fk_compras_proveedores` (`proveedor_id`),
   CONSTRAINT `fk_compras_proveedores` FOREIGN KEY (`proveedor_id`) REFERENCES `proveedores` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 -- Volcando datos para la tabla pp3_proyecto.compras: ~0 rows (aproximadamente)
 
--- Volcando estructura para tabla pp3_proyecto.detallescompra
-CREATE TABLE IF NOT EXISTS `detallescompra` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `compra_id` int(11) NOT NULL,
-  `producto_id` int(11) NOT NULL,
-  `cantidad` int(11) NOT NULL,
-  `precio_unitario_compra` decimal(10,2) NOT NULL,
-  `subtotal` decimal(10,2) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_detallescompra_compra` (`compra_id`),
-  KEY `fk_detallescompra_producto` (`producto_id`),
-  CONSTRAINT `fk_detallescompra_compra` FOREIGN KEY (`compra_id`) REFERENCES `compras` (`id`),
-  CONSTRAINT `fk_detallescompra_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
--- Volcando datos para la tabla pp3_proyecto.detallescompra: ~0 rows (aproximadamente)
-
--- Volcando estructura para tabla pp3_proyecto.detallesventa
-CREATE TABLE IF NOT EXISTS `detallesventa` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `venta_id` int(11) NOT NULL,
-  `producto_id` int(11) NOT NULL,
-  `cantidad` int(11) NOT NULL,
-  `precio_unitario_venta` decimal(10,2) NOT NULL,
-  `subtotal` decimal(10,2) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_detallesventa_venta` (`venta_id`),
-  KEY `fk_detallesventa_producto` (`producto_id`),
-  CONSTRAINT `fk_detallesventa_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`),
-  CONSTRAINT `fk_detallesventa_venta` FOREIGN KEY (`venta_id`) REFERENCES `ventas` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
--- Volcando datos para la tabla pp3_proyecto.detallesventa: ~0 rows (aproximadamente)
-
--- Volcando estructura para procedimiento pp3_proyecto.insertar_categorias
-DELIMITER //
-CREATE PROCEDURE `insertar_categorias`()
-BEGIN
-  DECLARE i INT DEFAULT 1;
-  WHILE i <= 10000 DO
-    INSERT INTO Categorias (nombre, descripcion)
-    VALUES (
-      CONCAT('Categoria ', LPAD(i, 5, '0')),
-      CONCAT('Descripción de la categoría ', i)
-    );
-    SET i = i + 1;
-  END WHILE;
-END//
-DELIMITER ;
-
--- Volcando estructura para procedimiento pp3_proyecto.insertar_marcas
-DELIMITER //
-CREATE PROCEDURE `insertar_marcas`()
-BEGIN
-  DECLARE i INT DEFAULT 1;
-  WHILE i <= 10000 DO
-    INSERT INTO Marcas (nombre)
-    VALUES (CONCAT('Marca ', LPAD(i, 5, '0')));
-    SET i = i + 1;
-  END WHILE;
-END//
-DELIMITER ;
-
--- Volcando estructura para procedimiento pp3_proyecto.insertar_productos
-DELIMITER //
-CREATE PROCEDURE `insertar_productos`()
-BEGIN
-  DECLARE i INT DEFAULT 1;
-  WHILE i <= 10000 DO
-    INSERT INTO Productos (
-      nombre, descripcion, precio_costo, precio_venta,
-      stock, marca_id, categoria_id, codigo_barras
-    ) VALUES (
-      CONCAT('Producto ', LPAD(i, 5, '0')),
-      CONCAT('Descripción del producto ', i),
-      ROUND(10 + (RAND() * 90), 2),
-      ROUND(100 + (RAND() * 400), 2),
-      FLOOR(1 + RAND() * 100),
-      FLOOR(1 + RAND() * 10000),
-      FLOOR(1 + RAND() * 10000),
-      CONCAT('CB', LPAD(i, 10, '0'))
-    );
-    SET i = i + 1;
-  END WHILE;
-END//
-DELIMITER ;
 
 -- Volcando estructura para tabla pp3_proyecto.marcas
 CREATE TABLE IF NOT EXISTS `marcas` (
@@ -613,7 +534,7 @@ CREATE TABLE IF NOT EXISTS `marcas` (
   `nombre` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `nombre` (`nombre`)
-) ENGINE=InnoDB AUTO_INCREMENT=207 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=207 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 -- Volcando datos para la tabla pp3_proyecto.marcas: ~206 rows (aproximadamente)
 INSERT IGNORE INTO `marcas` (`id`, `nombre`) VALUES
@@ -824,20 +745,6 @@ INSERT IGNORE INTO `marcas` (`id`, `nombre`) VALUES
 	(173, 'Yogurísimo (Firmeza)'),
 	(168, 'Yogurísimo (Yogurtines)');
 
--- Volcando estructura para tabla pp3_proyecto.productoproveedor
-CREATE TABLE IF NOT EXISTS `productoproveedor` (
-  `proveedor_id` int(11) NOT NULL,
-  `producto_id` int(11) NOT NULL,
-  `precio_compra` decimal(10,2) DEFAULT NULL,
-  `fecha_ultima_compra` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`proveedor_id`,`producto_id`),
-  KEY `fk_productoproveedor_producto` (`producto_id`),
-  CONSTRAINT `fk_productoproveedor_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`),
-  CONSTRAINT `fk_productoproveedor_proveedor` FOREIGN KEY (`proveedor_id`) REFERENCES `proveedores` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
--- Volcando datos para la tabla pp3_proyecto.productoproveedor: ~0 rows (aproximadamente)
-
 -- Volcando estructura para tabla pp3_proyecto.productos
 CREATE TABLE IF NOT EXISTS `productos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -856,7 +763,7 @@ CREATE TABLE IF NOT EXISTS `productos` (
   KEY `fk_productos_categorias` (`categoria_id`),
   CONSTRAINT `fk_productos_categorias` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`),
   CONSTRAINT `fk_productos_marcas` FOREIGN KEY (`marca_id`) REFERENCES `marcas` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=139 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=139 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 -- Volcando datos para la tabla pp3_proyecto.productos: ~138 rows (aproximadamente)
 INSERT IGNORE INTO `productos` (`id`, `nombre`, `descripcion`, `precio_costo`, `precio_venta`, `stock`, `marca_id`, `categoria_id`, `codigo_barras`, `fecha_alta`) VALUES
@@ -999,35 +906,105 @@ INSERT IGNORE INTO `productos` (`id`, `nombre`, `descripcion`, `precio_costo`, `
 	(137, 'Queso de Cabra Gourmet Trufado', 'Queso de cabra con aroma a trufa', 120.00, 250.00, 50, 112, 208, NULL, '2025-05-18 03:00:00'),
 	(138, 'Curry en Polvo Étnico Madras', 'Mezcla de especias para cocina india', 45.00, 100.00, 130, 22, 209, NULL, '2025-05-18 03:00:00');
 
--- Volcando estructura para tabla pp3_proyecto.proveedores
-CREATE TABLE IF NOT EXISTS `proveedores` (
+-- Volcando estructura para tabla pp3_proyecto.detallescompra
+CREATE TABLE IF NOT EXISTS `detallescompra` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(255) NOT NULL,
-  `contacto` varchar(255) DEFAULT NULL,
-  `telefono` varchar(50) DEFAULT NULL,
-  `email` varchar(255) DEFAULT NULL,
-  `direccion` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
--- Volcando datos para la tabla pp3_proyecto.proveedores: ~0 rows (aproximadamente)
-
--- Volcando estructura para tabla pp3_proyecto.ventas
-CREATE TABLE IF NOT EXISTS `ventas` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `cliente_id` int(11) DEFAULT NULL,
-  `fecha_venta` timestamp NULL DEFAULT current_timestamp(),
-  `total_venta` decimal(10,2) NOT NULL,
-  `metodo_pago` varchar(50) DEFAULT NULL,
+  `compra_id` int(11) NOT NULL,
+  `producto_id` int(11) NOT NULL,
+  `cantidad` int(11) NOT NULL,
+  `precio_unitario_compra` decimal(10,2) NOT NULL,
+  `subtotal` decimal(10,2) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `fk_ventas_clientes` (`cliente_id`),
-  CONSTRAINT `fk_ventas_clientes` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+  KEY `fk_detallescompra_compra` (`compra_id`),
+  KEY `fk_detallescompra_producto` (`producto_id`),
+  CONSTRAINT `fk_detallescompra_compra` FOREIGN KEY (`compra_id`) REFERENCES `compras` (`id`),
+  CONSTRAINT `fk_detallescompra_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
--- Volcando datos para la tabla pp3_proyecto.ventas: ~0 rows (aproximadamente)
+-- Volcando datos para la tabla pp3_proyecto.detallescompra: ~0 rows (aproximadamente)
 
-/*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
-/*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
-/*!40014 SET FOREIGN_KEY_CHECKS=IFNULL(@OLD_FOREIGN_KEY_CHECKS, 1) */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40111 SET SQL_NOTES=IFNULL(@OLD_SQL_NOTES, 1) */;
+-- Volcando estructura para tabla pp3_proyecto.detallesventa
+CREATE TABLE IF NOT EXISTS `detallesventa` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `venta_id` int(11) NOT NULL,
+  `producto_id` int(11) NOT NULL,
+  `cantidad` int(11) NOT NULL,
+  `precio_unitario_venta` decimal(10,2) NOT NULL,
+  `subtotal` decimal(10,2) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_detallesventa_venta` (`venta_id`),
+  KEY `fk_detallesventa_producto` (`producto_id`),
+  CONSTRAINT `fk_detallesventa_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`),
+  CONSTRAINT `fk_detallesventa_venta` FOREIGN KEY (`venta_id`) REFERENCES `ventas` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+
+-- Volcando datos para la tabla pp3_proyecto.detallesventa: ~0 rows (aproximadamente)
+
+-- Volcando estructura para procedimiento pp3_proyecto.insertar_categorias
+DELIMITER //
+CREATE PROCEDURE `insertar_categorias`()
+BEGIN
+  DECLARE i INT DEFAULT 1;
+  WHILE i <= 10000 DO
+    INSERT INTO Categorias (nombre, descripcion)
+    VALUES (
+      CONCAT('Categoria ', LPAD(i, 5, '0')),
+      CONCAT('Descripción de la categoría ', i)
+    );
+    SET i = i + 1;
+  END WHILE;
+END//
+DELIMITER ;
+
+-- Volcando estructura para procedimiento pp3_proyecto.insertar_marcas
+DELIMITER //
+CREATE PROCEDURE `insertar_marcas`()
+BEGIN
+  DECLARE i INT DEFAULT 1;
+  WHILE i <= 10000 DO
+    INSERT INTO Marcas (nombre)
+    VALUES (CONCAT('Marca ', LPAD(i, 5, '0')));
+    SET i = i + 1;
+  END WHILE;
+END//
+DELIMITER ;
+
+-- Volcando estructura para procedimiento pp3_proyecto.insertar_productos
+DELIMITER //
+CREATE PROCEDURE `insertar_productos`()
+BEGIN
+  DECLARE i INT DEFAULT 1;
+  WHILE i <= 10000 DO
+    INSERT INTO Productos (
+      nombre, descripcion, precio_costo, precio_venta,
+      stock, marca_id, categoria_id, codigo_barras
+    ) VALUES (
+      CONCAT('Producto ', LPAD(i, 5, '0')),
+      CONCAT('Descripción del producto ', i),
+      ROUND(10 + (RAND() * 90), 2),
+      ROUND(100 + (RAND() * 400), 2),
+      FLOOR(1 + RAND() * 100),
+      FLOOR(1 + RAND() * 10000),
+      FLOOR(1 + RAND() * 10000),
+      CONCAT('CB', LPAD(i, 10, '0'))
+    );
+    SET i = i + 1;
+  END WHILE;
+END//
+DELIMITER ;
+
+
+-- Volcando estructura para tabla pp3_proyecto.productoproveedor
+CREATE TABLE IF NOT EXISTS `productoproveedor` (
+  `proveedor_id` int(11) NOT NULL,
+  `producto_id` int(11) NOT NULL,
+  `precio_compra` decimal(10,2) DEFAULT NULL,
+  `fecha_ultima_compra` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`proveedor_id`,`producto_id`),
+  KEY `fk_productoproveedor_producto` (`producto_id`),
+  CONSTRAINT `fk_productoproveedor_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`),
+  CONSTRAINT `fk_productoproveedor_proveedor` FOREIGN KEY (`proveedor_id`) REFERENCES `proveedores` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+
+-- Volcando datos para la tabla pp3_proyecto.productoproveedor: ~0 rows (aproximadamente)
+
