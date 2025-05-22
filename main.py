@@ -24,7 +24,8 @@ if not config:
     exit("No se pudo cargar la configuración. Terminando el programa.")
 
 # Configuración inicial del modelo Ollama
-model = OllamaLLM(model="llama3.2")
+#model = OllamaLLM(model="llama3.2")
+model = OllamaLLM(model="deepseek-r1:14b")
 
 # Función para conectar a la base de datos MySQL
 def connect_to_db():
@@ -51,17 +52,21 @@ def get_product_info(product_name):
     cursor = connection.cursor(dictionary=True)
     query = """
         SELECT 
-            id_producto, nombre, descripcion, stock, marca_id, seccion_id, fecha_alta
-        FROM producto
-        WHERE LOWER(nombre) LIKE %s;
+            p.id, p.nombre 'producto', p.descripcion, p.precio_costo, p.precio_venta, p.stock, m.nombre 'marca', c.nombre 'categoria'
+        FROM productos p INNER JOIN marcas m ON p.marca_id = m.id INNER JOIN categorias c ON p.categoria_id = c.id
+        WHERE LOWER(p.nombre) LIKE %s OR LOWER(m.nombre) LIKE %s OR LOWER(c.nombre) LIKE %s 
+        ;
     """
     # Convertir el nombre del producto a minúsculas para mejorar la coincidencia
+    
     product_name_lower = product_name.lower()
-    cursor.execute(query, (f"%{product_name_lower}%",))
+    #print(query, (f"%{product_name_lower}%", f"%{product_name_lower}%", f"%{product_name_lower}%"))
+    cursor.execute(query, (f"%{product_name_lower}%", f"%{product_name_lower}%", f"%{product_name_lower}%"))
     products = cursor.fetchall()
 
     cursor.close()
     connection.close()
+    
 
     if not products:
         return f"No se encontró ningún producto con el nombre '{product_name}'."
@@ -112,7 +117,7 @@ def get_section_info(section_name):
 # Función para obtener la respuesta del modelo
 def get_response(user_input):
     user_input_lower = user_input.lower()
-
+    print("****GET RESPONSE****")
     # Verificar si la pregunta coincide con alguna categoría del config.json
     for category, data in config.items():
         if category == "prompt":  # Ignorar la clave "prompt"
@@ -121,10 +126,13 @@ def get_response(user_input):
         keywords = data.get("keywords", [])
         if any(keyword in user_input_lower for keyword in keywords):
             return data.get("message", "Sin información disponible.")
-
+ 
+   
     # Detectar si el usuario está buscando información de productos
-    product_keywords = ["producto", "productos", "artículo", "articulos"]
+    product_keywords = ["producto", "productos", "artículo", "articulo","articulos"]
+    print("Usuario puso: " + user_input_lower)
     if any(keyword in user_input_lower for keyword in product_keywords):
+        print("detectada la keyword")
         # Extraer el nombre del producto (todo después de la palabra clave)
         product_name = " ".join(user_input_lower.split()[1:])
         if not product_name.strip():
@@ -140,12 +148,12 @@ def get_response(user_input):
         for product in products:
             stock_status = "Disponible" if product["stock"] > 0 else "Agotado"
             context += (
-                f"- Nombre: {product['nombre']}\n"
+                f"- Nombre: {product['producto']}\n"
                 f"  Descripción: {product['descripcion'] or 'Sin descripción'}\n"
                 f"  Stock: {product['stock']} ({stock_status})\n"
-                f"  Marca ID: {product['marca_id'] or 'Sin marca'}\n"
-                f"  Sección ID: {product['seccion_id'] or 'Sin sección'}\n"
-                f"  Fecha de alta: {product['fecha_alta'].strftime('%d/%m/%Y') if product['fecha_alta'] else 'No disponible'}\n"
+                f"  Marca: {product['marca'] or 'Sin marca'}\n"
+                f"  Categoría: {product['categoria'] or 'Sin categoría'}\n"
+                f"  Precio: {product['precio_venta']}\n"
             )
 
         # Generar la respuesta usando Ollama

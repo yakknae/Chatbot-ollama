@@ -19,7 +19,7 @@
     "message": "Solicítela en caja antes de pagar, con su CUIT."
   },
   "horario": {
-    "keywords": ["horario", "atención", "atencion"],
+    "keywords": ["horario", "atención", "atencion", "abierto"],
     "message": "Lunes a Sábado de 8:00 a 21:00, Domingo de 9:00 a 13:00."
   },
   "productos": {
