@@ -1,4 +1,4 @@
-## Para hacer funcionar el sistema que está en GIT con DB (primero lo bajan, y lo abren con Visual Code, si no están acostumbrados a usar los comandos de GIT usen Git Desktop)
+## Instructivo para hacer andar el Chatbot-Ollama
 
 1. Instalar MySQL y probarlo, pueden usar HeidiSQL para conectarse al motor de MySQL cuando ya lo tengan instalado.
 2. Ejecutar el script que está en GIT para crear la DB e insertar los datos de prueba desde Heidi o desde el cliente Mysql que les guste.
