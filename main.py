@@ -1,4 +1,6 @@
 from langchain_ollama import OllamaLLM
+from langchain.chains import ConversationChain
+from langchain.memory import ConversationBufferMemory
 import mysql.connector
 import os
 from dotenv import load_dotenv
@@ -24,8 +26,13 @@ if not config:
     exit("No se pudo cargar la configuración. Terminando el programa.")
 
 # Configuración inicial del modelo Ollama
-#model = OllamaLLM(model="llama3.2")
-model = OllamaLLM(model="deepseek-r1:14b")
+model = OllamaLLM(model="llama3.2")
+
+# Crear una memoria para el historial de la conversación
+memory = ConversationBufferMemory()
+
+# Crear la cadena de conversación
+conversation = ConversationChain(llm=model, memory=memory, verbose=True)
 
 # Función para conectar a la base de datos MySQL
 def connect_to_db():
@@ -114,10 +121,11 @@ def get_section_info(section_name):
     return sections
 
 
+
 # Función para obtener la respuesta del modelo
 def get_response(user_input):
     user_input_lower = user_input.lower()
-    print("****GET RESPONSE****")
+
     # Verificar si la pregunta coincide con alguna categoría del config.json
     for category, data in config.items():
         if category == "prompt":  # Ignorar la clave "prompt"
@@ -125,22 +133,29 @@ def get_response(user_input):
 
         keywords = data.get("keywords", [])
         if any(keyword in user_input_lower for keyword in keywords):
-            return data.get("message", "Sin información disponible.")
- 
-   
+            response = data.get("message", "Sin información disponible.")
+            # Agregar la interacción al historial de la conversación
+            conversation.memory.chat_memory.add_user_message(user_input)
+            conversation.memory.chat_memory.add_ai_message(response)
+            return response
+
     # Detectar si el usuario está buscando información de productos
-    product_keywords = ["producto", "productos", "artículo", "articulo","articulos"]
-    print("Usuario puso: " + user_input_lower)
+    product_keywords = ["producto", "productos", "artículo", "articulo", "articulos"]
     if any(keyword in user_input_lower for keyword in product_keywords):
-        print("detectada la keyword")
-        # Extraer el nombre del producto (todo después de la palabra clave)
         product_name = " ".join(user_input_lower.split()[1:])
         if not product_name.strip():
-            return "Por favor, especifique el nombre del producto que desea buscar."
+            response = "Por favor, especifique el nombre del producto que desea buscar."
+            # Agregar la interacción al historial de la conversación
+            conversation.memory.chat_memory.add_user_message(user_input)
+            conversation.memory.chat_memory.add_ai_message(response)
+            return response
 
         products = get_product_info(product_name)
 
         if isinstance(products, str):  # Si no se encontraron productos
+            # Agregar la interacción al historial de la conversación
+            conversation.memory.chat_memory.add_user_message(user_input)
+            conversation.memory.chat_memory.add_ai_message(products)
             return products
 
         # Construir el contexto para Ollama
@@ -156,16 +171,17 @@ def get_response(user_input):
                 f"  Precio: {product['precio_venta']}\n"
             )
 
-        # Generar la respuesta usando Ollama
-        prompt = f"{context}\nPregunta del usuario: {user_input}\nRespuesta:"
-        response = model.invoke(prompt)
+        # Generar la respuesta usando ConversationChain
+        full_prompt = f"{context}\nPregunta del usuario: {user_input}\nRespuesta:"
+        response = conversation.run(full_prompt)
         return response
 
     # Respuesta predeterminada si no se detecta ninguna categoría
-    context = config.get("prompt", {}).get("message", "Eres un asistente virtual de un supermercado.")
-    prompt = f"{context}\nPregunta del usuario: {user_input}\nRespuesta:"
-    response = model.invoke(prompt)
+    default_context = config.get("prompt", {}).get("message", "Eres un asistente virtual de un supermercado.")
+    prompt = f"{default_context}\nPregunta del usuario: {user_input}\nRespuesta:"
+    response = conversation.run(prompt)
     return response
+
 # Función principal para interactuar con el usuario
 def main():
     print("¡Bienvenido al Asistente Virtual!")
