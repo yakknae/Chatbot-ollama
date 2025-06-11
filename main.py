@@ -34,6 +34,20 @@ memory = ConversationBufferMemory()
 # Crear la cadena de conversación
 conversation = ConversationChain(llm=model, memory=memory, verbose=True)
 
+#Cargar querys de la carpeta querys
+def load_query(filename):
+    try:
+        with open(filename,'r',encoding='utf-8') as file:
+            return file.read()
+    except FileNotFoundError:
+        raise FileNotFoundError(f"No se encontró el archivo de consulta: {filename}")
+
+#Instanciar las query
+QUERY_START = load_query("querys/query_start.sql")
+QUERY_CONTAINS = load_query("querys/query_contains.sql")
+QUERY_BRAND = load_query("querys/query_brand.sql")
+QUERY_SECTION = load_query("querys/query_section.sql")
+
 # Función para conectar a la base de datos MySQL
 def connect_to_db():
     try:
@@ -58,41 +72,9 @@ def get_product_info(product_name):
 
     cursor = connection.cursor(dictionary=True)
     # Consulta para productos que COMIENZAN con el nombre dado
-    query_start = """
-    SELECT 
-        p.id, 
-        p.nombre AS producto, 
-        p.descripcion, 
-        p.precio_costo, 
-        p.precio_venta, 
-        p.stock, 
-        m.nombre AS marca, 
-        c.nombre AS categoria
-    FROM productos p 
-    INNER JOIN marcas m ON p.marca_id = m.id 
-    INNER JOIN categorias c ON p.categoria_id = c.id
-    WHERE LOWER(p.nombre) LIKE %s
-    ORDER BY p.nombre ASC;
-    """
 
     # Consulta para productos que CONTIENEN el nombre dado
-    query_contains = """
-      SELECT 
-        p.id, 
-        p.nombre AS producto, 
-        p.descripcion, 
-        p.precio_costo, 
-        p.precio_venta, 
-        p.stock, 
-        m.nombre AS marca, 
-        c.nombre AS categoria
-    FROM productos p 
-    INNER JOIN marcas m ON p.marca_id = m.id 
-    INNER JOIN categorias c ON p.categoria_id = c.id
-    WHERE LOWER(p.nombre) LIKE %s
-    AND NOT LOWER(p.nombre) LIKE %s
-    ORDER BY p.nombre ASC;
-    """
+
 
     product_name_lower = product_name.strip().lower()
 
@@ -102,7 +84,8 @@ def get_product_info(product_name):
     else:
         first_word = product_name.strip().lower()
 
-    cursor.execute(query_start, (f"{first_word}%",))
+    # Usar la consulta externa
+    cursor.execute(QUERY_START, (f"{first_word}%",))
     start_results = cursor.fetchall()
 
     if start_results:
@@ -111,7 +94,7 @@ def get_product_info(product_name):
         return start_results
 
     # Si no hay coincidencias al inicio, buscar que contenga el término
-    cursor.execute(query_contains, (f"%{product_name_lower}%", f"{product_name_lower}%"))
+    cursor.execute(QUERY_CONTAINS, (f"%{product_name_lower}%", f"{product_name_lower}%"))
     contain_results = cursor.fetchall()
 
     cursor.close()
@@ -129,13 +112,8 @@ def get_brand_info(brand_name):
         return None
 
     cursor = connection.cursor(dictionary=True)
-    query = """
-        SELECT 
-            id, nombre
-        FROM marcas
-        WHERE nombre LIKE %s;
-    """
-    cursor.execute(query, (f"%{brand_name}%",))
+
+    cursor.execute(QUERY_BRAND, (f"%{brand_name}%",))
     brands = cursor.fetchall()
 
     cursor.close()
@@ -149,13 +127,8 @@ def get_section_info(section_name):
         return None
 
     cursor = connection.cursor(dictionary=True)
-    query = """
-        SELECT 
-            id, nombre
-        FROM categorias
-        WHERE nombre LIKE %s;
-    """
-    cursor.execute(query, (f"%{section_name}%",))
+
+    cursor.execute(QUERY_SECTION, (f"%{section_name}%",))
     sections = cursor.fetchall()
 
     cursor.close()
@@ -164,8 +137,8 @@ def get_section_info(section_name):
 
 def detect_product_with_ai(user_input):
     prompt = f"""
-Eres un asistente especializado en detectar productos mencionados en frases de compradores.
-Tu tarea es identificar el nombre del producto mencionado en la siguiente frase.
+Eres un asistente especializado en detectar productos o categorias mencionados en frases de compradores.
+Tu tarea es identificar el nombre del producto o categorias mencionado en la siguiente frase.
 
 Frase del usuario: "{user_input}"
 
