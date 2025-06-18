@@ -34,20 +34,6 @@ memory = ConversationBufferMemory()
 # Crear la cadena de conversación
 conversation = ConversationChain(llm=model, memory=memory, verbose=True)
 
-#Cargar querys de la carpeta querys
-def load_query(filename):
-    try:
-        with open(filename,'r',encoding='utf-8') as file:
-            return file.read()
-    except FileNotFoundError:
-        raise FileNotFoundError(f"No se encontró el archivo de consulta: {filename}")
-
-#Instanciar las query
-QUERY_START = load_query("querys/query_start.sql")
-QUERY_CONTAINS = load_query("querys/query_contains.sql")
-QUERY_BRAND = load_query("querys/query_brand.sql")
-QUERY_SECTION = load_query("querys/query_section.sql")
-
 # Función para conectar a la base de datos MySQL
 def connect_to_db():
     try:
@@ -72,9 +58,38 @@ def get_product_info(product_name):
 
     cursor = connection.cursor(dictionary=True)
     # Consulta para productos que COMIENZAN con el nombre dado
+    QUERY_START = """SELECT 
+    p.id, 
+    p.nombre AS producto, 
+    p.descripcion, 
+    p.precio_costo, 
+    p.precio_venta, 
+    p.stock, 
+    m.nombre AS marca, 
+    c.nombre AS categoria
+    FROM productos p 
+    INNER JOIN marcas m ON p.marca_id = m.id 
+    INNER JOIN categorias c ON p.categoria_id = c.id
+    WHERE LOWER(p.nombre) LIKE %s
+    ORDER BY p.nombre ASC; """
 
     # Consulta para productos que CONTIENEN el nombre dado
 
+    QUERY_CONTAINS = """SELECT 
+    p.id, 
+    p.nombre AS producto, 
+    p.descripcion, 
+    p.precio_costo, 
+    p.precio_venta, 
+    p.stock, 
+    m.nombre AS marca, 
+    c.nombre AS categoria
+    FROM productos p 
+    INNER JOIN marcas m ON p.marca_id = m.id 
+    INNER JOIN categorias c ON p.categoria_id = c.id
+    WHERE LOWER(p.nombre) LIKE %s
+    AND NOT LOWER(p.nombre) LIKE %s
+    ORDER BY p.nombre ASC;"""
 
     product_name_lower = product_name.strip().lower()
 
@@ -112,6 +127,11 @@ def get_brand_info(brand_name):
         return None
 
     cursor = connection.cursor(dictionary=True)
+    QUERY_BRAND = """
+    SELECT 
+    id, nombre
+    FROM marcas
+    WHERE nombre LIKE %s;"""
 
     cursor.execute(QUERY_BRAND, (f"%{brand_name}%",))
     brands = cursor.fetchall()
@@ -127,7 +147,11 @@ def get_section_info(section_name):
         return None
 
     cursor = connection.cursor(dictionary=True)
-
+    QUERY_SECTION = """SELECT 
+    id, nombre
+    FROM categorias
+    WHERE nombre LIKE %s;
+    """
     cursor.execute(QUERY_SECTION, (f"%{section_name}%",))
     sections = cursor.fetchall()
 
@@ -137,21 +161,23 @@ def get_section_info(section_name):
 
 def detect_product_with_ai(user_input):
     prompt = f"""
-Eres un asistente especializado en detectar productos o categorias mencionados en frases de compradores.
-Tu tarea es identificar el nombre del producto o categorias mencionado en la siguiente frase.
+Eres un asistente especializado en detectar productos mencionados en frases de compradores.
+Tu tarea es identificar claramente el nombre del producto mencionado en la frase del usuario.
+Solo responde con el nombre del producto. Si no hay un producto claro, responde solo con "ninguno".
 
 Frase del usuario: "{user_input}"
-
-Producto mencionado (solo el nombre, sin texto adicional): 
+Producto mencionado (solo el nombre): 
 """
-
     detected_product = model.invoke(prompt).strip().lower()
 
-    # Limpieza adicional si el modelo devuelve más texto del necesario
+    # Limpieza si el modelo devuelve cosas como "producto mencionado: galletas"
     if "producto mencionado" in detected_product:
-        detected_product = detected_product.split(":")[-1].strip().rstrip('.').strip()
+        detected_product = detected_product.split(":")[-1].strip().rstrip(".").strip()
 
-    # Si el resultado es "ninguno", vacío o muy corto, retornamos None
+    # Si termina con punto, lo eliminamos
+    detected_product = detected_product.rstrip(".")
+
+    # Si el resultado es vacío, "ninguno" o muy corto, devolvemos None
     if not detected_product or detected_product == "ninguno" or len(detected_product) < 2:
         return None
 
@@ -159,45 +185,12 @@ Producto mencionado (solo el nombre, sin texto adicional):
 
 # Función para obtener la respuesta del modelo
 def get_response(user_input):
-    # Usamos IA para detectar el producto
-    detected_product = detect_product_with_ai(user_input)
+    user_input_lower = user_input.lower().strip()
 
-    if detected_product:
-        print(f"producto detectado: {detected_product}")
-    else:
-        print("producto detectado: ninguno")
-
-    # Si se detectó un producto, buscarlo
-    if detected_product:
-        products = get_product_info(detected_product)
-
-        if isinstance(products, str):  # No se encontraron productos
-            conversation.memory.chat_memory.add_user_message(user_input)
-            conversation.memory.chat_memory.add_ai_message(products)
-            return products
-
-        context = "Información de productos encontrados:\n"
-        for product in products:
-            stock_status = "Disponible" if product["stock"] > 0 else "Agotado"
-            context += (
-                f"- Nombre: {product['producto']}\n"
-                f"  Descripción: {product['descripcion'] or 'Sin descripción'}\n"
-                f"  Stock: {product['stock']} ({stock_status})\n"
-                f"  Marca: {product['marca'] or 'Sin marca'}\n"
-                f"  Categoría: {product['categoria'] or 'Sin categoría'}\n"
-                f"  Precio: {product['precio_venta']}\n"
-            )
-
-        full_prompt = f"{context}\nPregunta del usuario: {user_input}\nRespuesta:"
-        response = conversation.run(full_prompt)
-        return response
-
-    # Verificar si la pregunta coincide con alguna categoría del config.json
-    user_input_lower = user_input.lower()
+    # 1. Verificar primero si coincide con alguna categoría del config.json
     for category, data in config.items():
         if category == "prompt":
             continue
-
         keywords = data.get("keywords", [])
         if any(keyword in user_input_lower for keyword in keywords):
             response = data.get("message", "Sin información disponible.")
@@ -205,10 +198,65 @@ def get_response(user_input):
             conversation.memory.chat_memory.add_ai_message(response)
             return response
 
-    # Respuesta predeterminada
+    # 2. Solo si NO hay coincidencia en config.json, usar IA para detectar producto
+    detected_product = detect_product_with_ai(user_input)
+
+    if detected_product:
+        print(f"Producto detectado por IA: {detected_product}")
+        products = get_product_info(detected_product)
+    else:
+        print("Ningún producto detectado por IA.")
+        products = None
+
+    # 3. Si hay productos encontrados
+    if products and isinstance(products, list):
+        context = "Tenemos estos tipos de productos disponibles:\n"
+        for product in products:
+            stock_status = "Disponible" if product.get("stock", 0) > 0 else "Agotado"
+            name = product.get('producto', 'Producto sin nombre')
+            description = product.get('descripcion', 'Sin descripción')
+            brand = product.get('marca', 'Marca desconocida')
+            price = product.get('precio_venta', 'Precio no disponible')
+            category = product.get('categoria', 'Categoría desconocida')
+
+            context += (
+                f"- **{name}**\n"
+                f"  - Descripción: {description}\n"
+                f"  - Marca: {brand}\n"
+                f"  - Categoría: {category}\n"
+                f"  - Precio: ${price}\n"
+                f"  - Stock: {product.get('stock', 0)} unidades ({stock_status})\n\n"
+            )
+
+        # Prompt personalizado para hacerlo más específico
+        full_prompt = f"""
+        {context}
+
+        El usuario pregunta: "{user_input}"
+
+        Basándote en la información proporcionada, enumera los tipos de productos disponibles, describe sus características principales y destaca su utilidad o ventajas. 
+        Si solo hay uno, enfócate en él. Si hay varios, compáralos brevemente y resalta las diferencias clave.
+
+        Proporciona una respuesta clara, amigable y útil para un cliente interesado en comprar este producto.
+
+        Respuesta clara y amigable:
+        """
+        response = conversation.invoke({"input": full_prompt})["response"]
+        conversation.memory.chat_memory.add_user_message(user_input)
+        conversation.memory.chat_memory.add_ai_message(response)
+        return response
+
+    elif isinstance(products, str):
+        conversation.memory.chat_memory.add_user_message(user_input)
+        conversation.memory.chat_memory.add_ai_message(products)
+        return products
+
+    # 4. Respuesta predeterminada
     default_context = config.get("prompt", {}).get("message", "Eres un asistente virtual de un supermercado.")
     prompt = f"{default_context}\nPregunta del usuario: {user_input}\nRespuesta:"
-    response = conversation.run(prompt)
+    response = conversation.invoke({"input": prompt})["response"]
+    conversation.memory.chat_memory.add_user_message(user_input)
+    conversation.memory.chat_memory.add_ai_message(response)
     return response
 
 # Función principal para interactuar con el usuario

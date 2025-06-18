@@ -10,5 +10,5 @@ SELECT
 FROM productos p 
 INNER JOIN marcas m ON p.marca_id = m.id 
 INNER JOIN categorias c ON p.categoria_id = c.id
-WHERE LOWER(c.nombre) LIKE %s
+WHERE LOWER(p.nombre) LIKE %s OR LOWER(p.descripcion) LIKE %s OR LOWER(c.nombre) LIKE %s
 ORDER BY p.nombre ASC;
