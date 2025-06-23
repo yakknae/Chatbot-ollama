@@ -1,6 +1,6 @@
 from langchain_ollama import OllamaLLM
-from langchain.chains import ConversationChain
-from langchain.memory import ConversationBufferMemory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 import mysql.connector
 import os
 from dotenv import load_dotenv
@@ -26,13 +26,31 @@ if not config:
     exit("No se pudo cargar la configuración. Terminando el programa.")
 
 # Configuración inicial del modelo Ollama
-model = OllamaLLM(model="llama3.2")
+model = OllamaLLM(model="deepseek-r1")
 
-# Crear una memoria para el historial de la conversación
-memory = ConversationBufferMemory()
+# Prompt general para conversaciones
+prompt = ChatPromptTemplate.from_messages([
+    ("system", config.get("prompt", {}).get("message", "Eres un asistente virtual de un supermercado.")),
+    MessagesPlaceholder(variable_name="history"),
+    ("human", "{input}"),
+])
 
-# Crear la cadena de conversación
-conversation = ConversationChain(llm=model, memory=memory, verbose=True)
+chain = prompt | model
+
+# Historial de mensajes
+store = {}
+
+def get_session_history(session_id: str):
+    if session_id not in store:
+        store[session_id] = []
+    return store[session_id]
+
+with_message_history = RunnableWithMessageHistory(
+    chain,
+    get_session_history,
+    input_messages_key="input",
+    history_messages_key="history"
+)
 
 # Función para conectar a la base de datos MySQL
 def connect_to_db():
@@ -52,55 +70,48 @@ def connect_to_db():
 
 # Función para buscar productos por nombre
 def get_product_info(product_name):
+    if product_name.lower() in ["ninguno", "", "none"]:
+        return None
+
     connection = connect_to_db()
     if not connection:
         return None
 
     cursor = connection.cursor(dictionary=True)
-    # Consulta para productos que COMIENZAN con el nombre dado
-    QUERY_START = """SELECT 
-    p.id, 
-    p.nombre AS producto, 
-    p.descripcion, 
-    p.precio_costo, 
-    p.precio_venta, 
-    p.stock, 
-    m.nombre AS marca, 
-    c.nombre AS categoria
-    FROM productos p 
-    INNER JOIN marcas m ON p.marca_id = m.id 
-    INNER JOIN categorias c ON p.categoria_id = c.id
-    WHERE LOWER(p.nombre) LIKE %s or LOWER(m.nombre) LIKE %s or LOWER(c.nombre) LIKE %s
-    ORDER BY p.nombre ASC; """
 
-    # Consulta para productos que CONTIENEN el nombre dado
+    QUERY_START = """SELECT 
+        p.id, 
+        p.nombre AS producto, 
+        p.descripcion, 
+        p.precio_costo, 
+        p.precio_venta, 
+        p.stock, 
+        m.nombre AS marca, 
+        c.nombre AS categoria
+        FROM productos p 
+        INNER JOIN marcas m ON p.marca_id = m.id 
+        INNER JOIN categorias c ON p.categoria_id = c.id
+        WHERE LOWER(p.nombre) LIKE %s OR LOWER(m.nombre) LIKE %s OR LOWER(c.nombre) LIKE %s
+        ORDER BY p.nombre ASC; """
 
     QUERY_CONTAINS = """SELECT 
-    p.id, 
-    p.nombre AS producto, 
-    p.descripcion, 
-    p.precio_costo, 
-    p.precio_venta, 
-    p.stock, 
-    m.nombre AS marca, 
-    c.nombre AS categoria
-    FROM productos p 
-    INNER JOIN marcas m ON p.marca_id = m.id 
-    INNER JOIN categorias c ON p.categoria_id = c.id
-    WHERE LOWER(p.nombre) LIKE %s
-    AND NOT LOWER(p.nombre) LIKE %s
-    ORDER BY p.nombre ASC;"""
+        p.id, 
+        p.nombre AS producto, 
+        p.descripcion, 
+        p.precio_costo, 
+        p.precio_venta, 
+        p.stock, 
+        m.nombre AS marca, 
+        c.nombre AS categoria
+        FROM productos p 
+        INNER JOIN marcas m ON p.marca_id = m.id 
+        INNER JOIN categorias c ON p.categoria_id = c.id
+        WHERE LOWER(p.nombre) LIKE %s AND NOT LOWER(p.nombre) LIKE %s
+        ORDER BY p.nombre ASC;"""
 
-    product_name_lower = product_name.strip().lower()
+    first_word = product_name.strip().lower().split()[0] if product_name.strip().lower().split() else product_name.strip().lower()
 
-    words = product_name.strip().lower().split()
-    if words:
-        first_word = words[0]
-    else:
-        first_word = product_name.strip().lower()
-
-    # Usar la consulta externa
-    cursor.execute(QUERY_START, (f"{first_word}%",f"{first_word}%",f"{first_word}%"))
+    cursor.execute(QUERY_START, (f"{first_word}%", f"{first_word}%", f"{first_word}%"))
     start_results = cursor.fetchall()
 
     if start_results:
@@ -108,38 +119,39 @@ def get_product_info(product_name):
         connection.close()
         return start_results
 
-    # Si no hay coincidencias al inicio, buscar que contenga el término
-    cursor.execute(QUERY_CONTAINS, (f"%{product_name_lower}%", f"{product_name_lower}%"))
+    cursor.execute(QUERY_CONTAINS, (f"%{product_name.strip().lower()}%", f"{first_word}%"))
     contain_results = cursor.fetchall()
 
     cursor.close()
     connection.close()
 
-    if contain_results:
-        return contain_results
+    return contain_results or f"No se encontró ningún producto relacionado con '{product_name}'."
 
-    return f"No se encontró ningún producto relacionado con '{product_name}'."
-
-
+# Función para detectar producto desde IA
 def detect_product_with_ai(user_input):
     prompt = f"""
-Eres un asistente especializado en detectar productos mencionados en frases de compradores.
-Tu tarea es identificar claramente el nombre del producto mencionado en la frase del usuario.
-Solo responde con el nombre del producto. Si no hay un producto claro, responde solo con "ninguno".
+Detecta el producto mencionado en la siguiente frase del usuario.
+
+Reglas:
+- Solo responde con el nombre del producto mencionado.
+- No incluyas explicaciones ni justificaciones.
+- Si no hay un producto claro, responde exactamente: "ninguno"
+- La respuesta debe ser una sola palabra o frase corta.
+- No uses comillas ni signos de puntuación extra.
 
 Frase del usuario: "{user_input}"
-Producto mencionado (solo el nombre): 
+
+Producto mencionado: 
 """
+
     detected_product = model.invoke(prompt).strip().lower()
 
-    # Limpieza si el modelo devuelve cosas como "producto mencionado: galletas"
-    if "producto mencionado" in detected_product:
-        detected_product = detected_product.split(":")[-1].strip().rstrip(".").strip()
+    # Limpieza si el modelo devuelve cosas como "producto mencionado: galletitas"
+    if ":" in detected_product:
+        detected_product = detected_product.split(":")[-1].strip()
 
-    # Si termina con punto, lo eliminamos
-    detected_product = detected_product.rstrip(".")
+    detected_product = detected_product.strip("., ")
 
-    # Si el resultado es vacío, "ninguno" o muy corto, devolvemos None
     if not detected_product or detected_product == "ninguno" or len(detected_product) < 2:
         return None
 
@@ -156,13 +168,12 @@ def get_response(user_input):
         keywords = data.get("keywords", [])
         if any(keyword in user_input_lower for keyword in keywords):
             response = data.get("message", "Sin información disponible.")
-            conversation.memory.chat_memory.add_user_message(user_input)
-            conversation.memory.chat_memory.add_ai_message(response)
             return response
 
-    # 2. Solo si NO hay coincidencia en config.json, usar IA para detectar producto
+    # 2. Usar IA para detectar producto
     detected_product = detect_product_with_ai(user_input)
 
+    # 3. Validamos que el producto detectado sea válido
     if detected_product:
         print(f"Producto detectado por IA: {detected_product}")
         products = get_product_info(detected_product)
@@ -170,8 +181,8 @@ def get_response(user_input):
         print("Ningún producto detectado por IA.")
         products = None
 
-    # 3. Si hay productos encontrados
-    if products and isinstance(products, list):
+    # 4. Si hay productos encontrados
+    if isinstance(products, list):
         context = "Tenemos estos tipos de productos disponibles:\n"
         for product in products:
             stock_status = "Disponible" if product.get("stock", 0) > 0 else "Agotado"
@@ -190,7 +201,6 @@ def get_response(user_input):
                 f"  - Stock: {product.get('stock', 0)} unidades ({stock_status})\n\n"
             )
 
-        # Prompt personalizado para hacerlo más específico
         full_prompt = f"""
         {context}
 
@@ -203,22 +213,20 @@ def get_response(user_input):
 
         Respuesta clara y amigable:
         """
-        response = conversation.invoke({"input": full_prompt})["response"]
-        conversation.memory.chat_memory.add_user_message(user_input)
-        conversation.memory.chat_memory.add_ai_message(response)
+        response = with_message_history.invoke(
+            {"input": full_prompt},
+            config={"configurable": {"session_id": "abc123"}}
+        ).content
         return response
 
     elif isinstance(products, str):
-        conversation.memory.chat_memory.add_user_message(user_input)
-        conversation.memory.chat_memory.add_ai_message(products)
         return products
 
-    # 4. Respuesta predeterminada
-    default_context = config.get("prompt", {}).get("message", "Eres un asistente virtual de un supermercado.")
-    prompt = f"{default_context}\nPregunta del usuario: {user_input}\nRespuesta:"
-    response = conversation.invoke({"input": prompt})["response"]
-    conversation.memory.chat_memory.add_user_message(user_input)
-    conversation.memory.chat_memory.add_ai_message(response)
+    # 5. Última opción: Usar IA para responder de forma general
+    response = with_message_history.invoke(
+        {"input": user_input},
+        config={"configurable": {"session_id": "abc123"}}
+    ).content
     return response
 
 # Función principal para interactuar con el usuario
