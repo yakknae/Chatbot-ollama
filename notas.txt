@@ -1,0 +1,8 @@
+--- 
+model = OllamaLLM(model="llama3.2")
+---
+model = OllamaLLM(model="deepseek-r1:14b")
+---
+query para buscar productos
+SELECT * FROM productos WHERE LOWER(nombre) LIKE '%queso%';
+---
