@@ -1,8 +1,6 @@
 from langchain_ollama import OllamaLLM
-from langchain_core.runnables.history import RunnableWithMessageHistory
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.chat_history import InMemoryChatMessageHistory
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.chains import ConversationChain
+from langchain.memory import ConversationBufferMemory
 import mysql.connector
 import os
 from dotenv import load_dotenv
@@ -30,30 +28,12 @@ if not config:
 # Configuración inicial del modelo Ollama
 model = OllamaLLM(model="llama3.2")
 
-# Prompt con historial
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "Eres un asistente útil."),
-    MessagesPlaceholder(variable_name="history"),
-    ("human", "{input}")
-])
+# Crear una memoria para el historial de la conversación
+memory = ConversationBufferMemory()
 
-# Cadena final
-chain = prompt | model
+# Crear la cadena de conversación
+conversation = ConversationChain(llm=model, memory=memory, verbose=True)
 
-# Historial en memoria
-store = {}
-
-def get_session_history(session_id: str):
-    if session_id not in store:
-        store[session_id] = InMemoryChatMessageHistory()
-    return store[session_id]
-
-with_message_history = RunnableWithMessageHistory(
-    chain,
-    get_session_history,
-    input_messages_key="input",
-    history_messages_key="history"
-)
 
 # Función para conectar a la base de datos MySQL
 def connect_to_db():
@@ -183,6 +163,8 @@ def get_response(user_input):
         keywords = data.get("keywords", [])
         if any(keyword in user_input_lower for keyword in keywords):
             response = data.get("message", "Sin información disponible.")
+            conversation.memory.chat_memory.add_user_message(user_input)
+            conversation.memory.chat_memory.add_ai_message(response)
             return response
 
     # 2. Solo si NO hay coincidencia en config.json, usar IA para detectar producto
@@ -221,27 +203,29 @@ def get_response(user_input):
 
         El usuario pregunta: "{user_input}"
 
-        Solo muestra los productos relacionados con esa búsqueda, sin añadir opiniones ni descripciones extra. Muestra únicamente lo que tenemos disponible.
+        Basándote en la información proporcionada, enumera los tipos de productos disponibles, describe sus características principales y destaca su utilidad o ventajas. 
+        Si solo hay uno, enfócate en él. Si hay varios, compáralos brevemente y resalta las diferencias clave.
+
+        Proporciona una respuesta clara, amigable y útil para un cliente interesado en comprar este producto.
 
         Respuesta clara y amigable:
         """
-        response = with_message_history.invoke(
-        {"input": full_prompt},
-        config={"configurable": {"session_id": "abc123"}}
-        )
+        response = conversation.invoke({"input": full_prompt})["response"]
+        conversation.memory.chat_memory.add_user_message(user_input)
+        conversation.memory.chat_memory.add_ai_message(response)
         return response
 
     elif isinstance(products, str):
-
+        conversation.memory.chat_memory.add_user_message(user_input)
+        conversation.memory.chat_memory.add_ai_message(products)
         return products
 
     # 4. Respuesta predeterminada
     default_context = config.get("prompt", {}).get("message", "Eres un asistente virtual de un supermercado.")
     prompt = f"{default_context}\nPregunta del usuario: {user_input}\nRespuesta:"
-    response = with_message_history.invoke(
-    {"input": prompt},
-    config={"configurable": {"session_id": "abc123"}}
-    )
+    response = conversation.invoke({"input": prompt})["response"]
+    conversation.memory.chat_memory.add_user_message(user_input)
+    conversation.memory.chat_memory.add_ai_message(response)
     return response
 
 # Función principal para interactuar con el usuario
