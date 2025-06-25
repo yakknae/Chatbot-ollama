@@ -6,7 +6,3 @@ Reglas:
 - Si no hay un producto claro, responde exactamente: "ninguno"
 - La respuesta debe ser una sola palabra o frase corta.
 - No uses comillas ni signos de puntuación extra.
-
-Frase del usuario: "{user_input}"
-
-Producto mencionado: 

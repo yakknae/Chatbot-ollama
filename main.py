@@ -28,7 +28,7 @@ if not config:
     exit("No se pudo cargar la configuración. Terminando el programa.")
 
 # Configuración inicial del modelo Ollama
-model = OllamaLLM(model="llama3.2")
+model = OllamaLLM(model="llama3.2:latest")
 
 # Prompt con historial
 prompt = ChatPromptTemplate.from_messages([
@@ -42,7 +42,6 @@ chain = prompt | model
 
 # Historial en memoria
 store = {}
-
 
 def get_session_history(session_id: str):
     if session_id not in store:
@@ -144,20 +143,18 @@ def get_product_info(product_name):
 
 
 def detect_product_with_ai(user_input):
-    prompt = f"""
-Detecta el producto mencionado en la siguiente frase del usuario.
-
-Reglas:
-- Solo responde con el nombre EXACTO mencionado por el usuario.
-- No reemplaces palabras por sinónimos o variantes (ej: no cambies 'galletitas' por 'galletas').
-- Si no hay un producto claro, responde exactamente: "ninguno"
-- La respuesta debe ser una sola palabra o frase corta.
-- No uses comillas ni signos de puntuación extra.
+    with open("prompts/prompt_input.txt", "r", encoding="utf-8") as file:
+        prompt = file.read()
+    
+    prompt += f"""
 
 Frase del usuario: "{user_input}"
 
 Producto mencionado: 
 """
+    # print("DEBUG MATI")
+    # print(prompt)
+    # print("/DEBUG")
     detected_product = model.invoke(prompt).strip().lower()
 
     # Limpieza si el modelo devuelve cosas como "producto mencionado: galletas"
@@ -237,7 +234,10 @@ def get_response(user_input):
         return products
 
     # 4. Respuesta predeterminada
-    default_context = config.get("prompt", {}).get("message", "Eres un asistente virtual de un supermercado.")
+    with open("prompts/prompt_output.txt", "r", encoding="utf-8") as fileOut:
+        promptOutput = fileOut.read()
+    
+    default_context = config.get("prompt", {}).get("message", promptOutput)
     prompt = f"{default_context}\nPregunta del usuario: {user_input}\nRespuesta:"
     response = with_message_history.invoke(
     {"input": prompt},
