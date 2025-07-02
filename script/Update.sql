@@ -15,6 +15,7 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 -- Volcando datos para la tabla pp3_proyecto.marcas: ~76 rows (aproximadamente)
+DELETE FROM `productos`;
 DELETE FROM `marcas`;
 INSERT INTO `marcas` (`id`, `nombre`) VALUES
 	(31, 'Acer Argentina'),
@@ -95,7 +96,7 @@ INSERT INTO `marcas` (`id`, `nombre`) VALUES
 	(16, 'Topper');
 
 -- Volcando datos para la tabla pp3_proyecto.productos: ~195 rows (aproximadamente)
-DELETE FROM `productos`;
+
 INSERT INTO `productos` (`id`, `nombre`, `descripcion`, `precio_costo`, `precio_venta`, `stock`, `marca_id`, `categoria_id`, `codigo_barras`, `fecha_alta`) VALUES
 	(2, 'Yerba Mate Marolio', 'Yerba mate elaborada tradicional', 80.00, 120.00, 200, 52, 23, '779123456002', '2025-05-25 21:13:28'),
 	(3, 'Salame Paladini', 'Salame tipo milán de Paladini', 150.00, 200.00, 50, 8, 14, '779123456003', '2025-05-25 21:13:28'),
