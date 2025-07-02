@@ -7,6 +7,7 @@ import mysql.connector
 import os
 from dotenv import load_dotenv
 import json
+import re
 
 load_dotenv()
 
@@ -156,6 +157,10 @@ Producto mencionado:
     # print(prompt)
     # print("/DEBUG")
     detected_product = model.invoke(prompt).strip().lower()
+    
+    # Eliminar etiquetas <think>...</think>
+    detected_product = re.sub(r"<think>.*?</think>", "", detected_product, flags=re.DOTALL | re.IGNORECASE).strip()
+
 
     # Limpieza si el modelo devuelve cosas como "producto mencionado: galletas"
     if "producto mencionado" in detected_product:
