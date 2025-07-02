@@ -155,7 +155,7 @@ INSERT INTO `productos` (`id`, `nombre`, `descripcion`, `precio_costo`, `precio_
 	(116, 'Arroz Gallo Perdigón 1kg', 'Arroz redondo', 200.00, 280.00, 130, 3, 20, '779123450011', '2025-06-11 22:35:24'),
 	(117, 'Fideos Matarazzo 500g', 'Spaghetti tradicionales', 150.00, 230.00, 140, 3, 19, '779123450012', '2025-06-11 22:35:24'),
 	(118, 'Aceite de Girasol Natura 1L', 'Aceite de girasol puro', 220.00, 320.00, 150, 42, 16, '779123450013', '2025-06-11 22:35:24'),
-	(119, 'Mayonesa Hellmann\'s 475g', 'Mayonesa clásica', 250.00, 360.00, 140, 50, 17, '779123450014', '2025-06-11 22:35:24'),
+	(119, 'Mayonesa Hellmann 475g', 'Mayonesa clásica', 250.00, 360.00, 140, 50, 17, '779123450014', '2025-06-11 22:35:24'),
 	(120, 'Ketchup Knorr 500g', 'Salsa ketchup', 200.00, 290.00, 130, 51, 18, '779123450015', '2025-06-11 22:35:24'),
 	(121, 'Atún La Campagnola 170g', 'Atún en agua', 180.00, 260.00, 110, 49, 9, '779123450016', '2025-06-11 22:35:24'),
 	(122, 'Leche en polvo La Serenísima 400g', 'Leche en polvo instantánea', 300.00, 420.00, 120, 1, 1, '779123450017', '2025-06-11 22:35:24'),
