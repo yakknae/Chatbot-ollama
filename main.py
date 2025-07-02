@@ -150,7 +150,7 @@ def detect_product_with_ai(user_input):
     prompt += f"""
 
 Frase del usuario: "{user_input}"
-
+Solo devuelve el **nombre del producto mencionado**, sin explicaciones, sin razonamientos y sin ninguna etiqueta.
 Producto mencionado: 
 """
     # print("DEBUG MATI")
