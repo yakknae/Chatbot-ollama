@@ -11,6 +11,7 @@ import json
 load_dotenv()
 
 # Cargar el archivo config.json
+#test commit
 def load_config():
     try:
         with open("config.json", "r", encoding="utf-8") as file:
@@ -149,7 +150,7 @@ def detect_product_with_ai(user_input):
     prompt += f"""
 
 Frase del usuario: "{user_input}"
-
+Solo devuelve el **nombre del producto mencionado**, sin explicaciones, sin razonamientos y sin ninguna etiqueta.
 Producto mencionado: 
 """
     # print("DEBUG MATI")
