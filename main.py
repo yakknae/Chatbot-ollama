@@ -11,6 +11,7 @@ import json
 load_dotenv()
 
 # Cargar el archivo config.json
+#test commit
 def load_config():
     try:
         with open("config.json", "r", encoding="utf-8") as file:
