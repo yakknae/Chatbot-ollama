@@ -6,3 +6,4 @@ Reglas:
 - Si no hay un producto claro, responde exactamente: "ninguno"
 - La respuesta debe ser una sola palabra o frase corta.
 - No uses comillas ni signos de puntuación extra.
+- Si el producto queda en plural, responde con el mismo pero en singular
