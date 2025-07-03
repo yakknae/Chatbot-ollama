@@ -16,7 +16,7 @@
 
 
 -- Volcando estructura de base de datos para pp3_proyecto
-CREATE DATABASE IF NOT EXISTS `pp3_proyecto` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci */;
+CREATE DATABASE IF NOT EXISTS `pp3_proyecto` /*!40100 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci */;
 USE `pp3_proyecto`;
 
 -- Volcando estructura para tabla pp3_proyecto.categorias
@@ -577,7 +577,7 @@ CREATE TABLE IF NOT EXISTS `productos_bak` (
   `categoria_id` int(11) DEFAULT NULL,
   `codigo_barras` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
   `fecha_alta` timestamp NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB DEFAULT  CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 
 -- Volcando datos para la tabla pp3_proyecto.productos_bak: ~245 rows (aproximadamente)
 INSERT IGNORE INTO `productos_bak` (`id`, `nombre`, `descripcion`, `precio_costo`, `precio_venta`, `stock`, `marca_id`, `categoria_id`, `codigo_barras`, `fecha_alta`) VALUES
