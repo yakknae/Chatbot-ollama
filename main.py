@@ -6,12 +6,12 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 import mysql.connector
-import os
-from dotenv import load_dotenv
+#import os
+#from dotenv import load_dotenv
 import json
 import re
 
-load_dotenv()
+#load_dotenv()
 
 # Cargar el archivo config.json
 def load_config():
@@ -58,15 +58,17 @@ with_message_history = RunnableWithMessageHistory(
     history_messages_key="history"
 )
 
-# Función para conectar a la base de datos MySQL
+# Función para conectar a la base de datos MySQL con valores fijos
 def connect_to_db():
     try:
         connection = mysql.connector.connect(
-            host=os.getenv("host"),
-            user=os.getenv("user"),
-            password=os.getenv("password"),
-            database=os.getenv("database")
+            host="0.tcp.sa.ngrok.io",    # poner acá tu host ngrok
+            port=10257,                  # y tu puerto ngrok
+            user="root",
+            password="f289t",
+            database="pp3_proyecto"
         )
+
         if connection.is_connected():
             print("Conexión exitosa a la base de datos.")
         return connection
@@ -74,14 +76,14 @@ def connect_to_db():
         print(f"Error al conectar a la base de datos: {err}")
         return None
 
-# Función para buscar productos por nombre
+# (el resto del código igual, sin cambios)
+
 def get_product_info(product_name):
     connection = connect_to_db()
     if not connection:
         return None
 
     cursor = connection.cursor(dictionary=True)
-    # Consulta para productos que COMIENZAN con el nombre dado
     QUERY_START = """SELECT 
     p.id, 
     p.nombre AS producto, 
@@ -96,8 +98,6 @@ def get_product_info(product_name):
     INNER JOIN categorias c ON p.categoria_id = c.id
     WHERE LOWER(p.nombre) LIKE %s or LOWER(m.nombre) LIKE %s or LOWER(c.nombre) LIKE %s
     ORDER BY p.nombre ASC; """
-
-    # Consulta para productos que CONTIENEN el nombre dado
 
     QUERY_CONTAINS = """SELECT 
     p.id, 
@@ -116,15 +116,10 @@ def get_product_info(product_name):
     ORDER BY p.nombre ASC;"""
 
     product_name_lower = product_name.strip().lower()
-
     words = product_name.strip().lower().split()
-    if words:
-        first_word = words[0]
-    else:
-        first_word = product_name.strip().lower()
+    first_word = words[0] if words else product_name_lower
 
-    # Usar la consulta externa
-    cursor.execute(QUERY_START, (f"{first_word}%",f"{first_word}%",f"{first_word}%"))
+    cursor.execute(QUERY_START, (f"{first_word}%", f"{first_word}%", f"{first_word}%"))
     start_results = cursor.fetchall()
 
     if start_results:
@@ -132,7 +127,6 @@ def get_product_info(product_name):
         connection.close()
         return start_results
 
-    # Si no hay coincidencias al inicio, buscar que contenga el término
     cursor.execute(QUERY_CONTAINS, (f"%{product_name_lower}%", f"{product_name_lower}%"))
     contain_results = cursor.fetchall()
 
@@ -144,7 +138,6 @@ def get_product_info(product_name):
 
     return f"No se encontró ningún producto relacionado con '{product_name}'."
 
-
 def detect_product_with_ai(user_input):
     with open("prompts/prompt_input.txt", "r", encoding="utf-8") as file:
         prompt = file.read()
@@ -155,33 +148,22 @@ Frase del usuario: "{user_input}"
 
 Producto mencionado: 
 """
-    # print("DEBUG MATI")
-    # print(prompt)
-    # print("/DEBUG")
     detected_product = model.invoke(prompt).strip().lower()
-    
-    # Eliminar etiquetas <think>...</think>
     detected_product = re.sub(r"<think>.*?</think>", "", detected_product, flags=re.DOTALL | re.IGNORECASE).strip()
 
-
-    # Limpieza si el modelo devuelve cosas como "producto mencionado: galletas"
     if "producto mencionado" in detected_product:
         detected_product = detected_product.split(":")[-1].strip().rstrip(".").strip()
 
-    # Si termina con punto, lo eliminamos
     detected_product = detected_product.rstrip(".")
 
-    # Si el resultado es vacío, "ninguno" o muy corto, devolvemos None
     if not detected_product or detected_product == "ninguno" or len(detected_product) < 2:
         return None
 
     return detected_product
 
-# Función para obtener la respuesta del modelo
 def get_response(user_input):
     user_input_lower = user_input.lower().strip()
 
-    # 1. Verificar primero si coincide con alguna categoría del config.json
     for category, data in config.items():
         if category == "prompt":
             continue
@@ -190,7 +172,6 @@ def get_response(user_input):
             response = data.get("message", "Sin información disponible.")
             return response
 
-    # 2. Solo si NO hay coincidencia en config.json, usar IA para detectar producto
     detected_product = detect_product_with_ai(user_input)
 
     if detected_product:
@@ -200,7 +181,6 @@ def get_response(user_input):
         print("Ningún producto detectado por IA.")
         products = None
 
-    # 3. Si hay productos encontrados
     if products and isinstance(products, list):
         context = "Tenemos estos tipos de productos disponibles:\n"
         for product in products:
@@ -220,7 +200,6 @@ def get_response(user_input):
                 f"  - Stock: {product.get('stock', 0)} unidades ({stock_status})\n\n"
             )
 
-        # Prompt personalizado para hacerlo más específico
         full_prompt = f"""
         {context}
 
@@ -231,28 +210,25 @@ def get_response(user_input):
         Respuesta clara y amigable:
         """
         response = with_message_history.invoke(
-        {"input": full_prompt},
-        config={"configurable": {"session_id": "abc123"}}
+            {"input": full_prompt},
+            config={"configurable": {"session_id": "abc123"}}
         )
         return response
 
     elif isinstance(products, str):
-
         return products
 
-    # 4. Respuesta predeterminada
     with open("prompts/prompt_output.txt", "r", encoding="utf-8") as fileOut:
         promptOutput = fileOut.read()
     
     default_context = config.get("prompt", {}).get("message", promptOutput)
     prompt = f"{default_context}\nPregunta del usuario: {user_input}\nRespuesta:"
     response = with_message_history.invoke(
-    {"input": prompt},
-    config={"configurable": {"session_id": "abc123"}}
+        {"input": prompt},
+        config={"configurable": {"session_id": "abc123"}}
     )
     return response
 
-# Función principal para interactuar con el usuario
 def main():
     print("¡Bienvenido al Asistente Virtual!")
     print("Escribe 'salir' para terminar la conversación.\n")
@@ -266,6 +242,5 @@ def main():
         response = get_response(user_input)
         print(f"Bot: {response}\n")
 
-# Ejecutar la aplicación
 if __name__ == "__main__":
     main()
