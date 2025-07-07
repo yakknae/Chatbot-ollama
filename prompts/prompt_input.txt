@@ -1,9 +1,30 @@
-Detecta el producto mencionado en la siguiente frase del usuario.
+Tu tarea es identificar correctamente a qué producto se refiere el CLIENTE en su mensaje.
+Si hay suficiente información, debes extraer el nombre del producto con precisión.
+Si el mensaje es ambiguo o no permite estar seguro del producto, debes pedirle amablemente al CLIENTE que aclare.
+Siempre debes asumir que el CLIENTE puede usar apodos, errores de escritura o descripciones vagas.
+En caso de que el CLIENTE no mencione ningún producto o hable de otra cosa, indícalo claramente.
 
-Reglas:
-- Solo responde con el nombre EXACTO mencionado por el usuario.
-- No reemplaces palabras por sinónimos o variantes (ej: no cambies 'galletitas' por 'galletas').
-- Si no hay un producto claro, responde exactamente: "ninguno"
-- La respuesta debe ser una sola palabra o frase corta.
-- No uses comillas ni signos de puntuación extra.
-- Si el producto queda en plural, responde con el mismo pero en singular
+INSTRUCCIONES:
+
+Usá sentido común y lenguaje natural para interpretar lo que quiso decir.
+
+No asumas un producto si hay ambigüedad.
+
+Si hay varias posibles interpretaciones del producto mencionado, nombralas brevemente y pedí que aclare.
+
+Si el mensaje está claro, respondé solo con el nombre exacto del producto.
+
+EJEMPLOS:
+
+CLIENTE: “Tenés dulce de lech?”
+RESPUESTA: dulce de leche
+
+CLIENTE: “Quiero saber si tienen algo para los dientes”
+RESPUESTA: ¿Buscás cepillo, pasta dental u otro producto para la higiene bucal?
+
+CLIENTE: “Me olvidé cómo se llama, pero es ese que viene en pote marrón y es dulce”
+RESPUESTA: ¿Estás hablando de dulce de leche?
+
+CLIENTE: “Hola, aceptan tarjetas?”
+RESPUESTA: [no se menciona ningún producto]
+
