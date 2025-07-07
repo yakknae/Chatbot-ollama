@@ -1,2 +1,13 @@
+# Archivos sensibles
 .env
-.env
+
+# Carpeta de Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.db
+
+# Entornos virtuales
+venv/
+env/

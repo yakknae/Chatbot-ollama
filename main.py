@@ -29,7 +29,7 @@ if not config:
     exit("No se pudo cargar la configuración. Terminando el programa.")
 
 # Configuración inicial del modelo Ollama
-model = OllamaLLM(model="gemma3n:e4b")
+model = OllamaLLM(model="gemma3:latest")
 
 # Prompt con historial
 prompt = ChatPromptTemplate.from_messages([
@@ -150,7 +150,6 @@ def detect_product_with_ai(user_input):
     prompt += f"""
 
 Frase del usuario: "{user_input}"
-
 Producto mencionado: 
 """
     # print("DEBUG MATI")
@@ -223,8 +222,6 @@ def get_response(user_input):
         {context}
 
         El usuario pregunta: "{user_input}"
-
-        Solo muestra los productos relacionados con esa búsqueda, sin añadir opiniones ni descripciones extra. Muestra únicamente lo que tenemos disponible.
 
         Respuesta clara y amigable:
         """
