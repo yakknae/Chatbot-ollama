@@ -35,13 +35,16 @@ Opción 2:
 > python .\main.py
 
 ## Como subir cambios 
+```bash
 > git status (para ver si)
 > git add . (agrega todos los archivos al push)
 > git rm --cached .env (elimina el archivo .env (en este caso) del push que hagan)
 > git commit -m "mensaje del comit"
 > git push origin master (manda los cambios a la rama master, en caso que lo subas a tu rama cambia master por el nombre de tu rama)
-
+```
+```bash
 ## Posibles casos
 > git stash (Guarda tus cambios localmente)
 > git pull origin master (Para bajar los cambios a tu proyecto local (cambiar el nombre de master para que se aplique a tu rama))
 > git stash apply (Reaplica tus cambios guardados)
+```
