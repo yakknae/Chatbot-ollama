@@ -42,8 +42,8 @@ Opción 2:
 > git commit -m "mensaje del comit"
 > git push origin master (manda los cambios a la rama master, en caso que lo subas a tu rama cambia master por el nombre de tu rama)
 ```
+## Como traer cambios
 ```bash
-## Posibles casos
 > git stash (Guarda tus cambios localmente)
 > git pull origin master (Para bajar los cambios a tu proyecto local (cambiar el nombre de master para que se aplique a tu rama))
 > git stash apply (Reaplica tus cambios guardados)
